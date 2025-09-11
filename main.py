@@ -11,7 +11,7 @@ while True:
     ok, frame = cap.read()
     if not ok:
         break
-    results = model(frame, imgsz=640, conf=0.8)[0]
+    results = model(frame, imgsz=256, conf=0.8)[0]
     annotated = results.plot()
     now = time.time()
     fps = 0.9*fps + 0.1*(1.0/(now - prev))
