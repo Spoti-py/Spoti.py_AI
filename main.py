@@ -1,7 +1,7 @@
 import cv2, time, numpy as np
 from ultralytics import YOLO
 
-model = YOLO("./models/faceDetecter.pt")
+model = YOLO("./models/drowsiness.pt")
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     raise RuntimeError("딴카메라")
