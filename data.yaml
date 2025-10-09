@@ -1,0 +1,8 @@
+train: dataset_split\train
+val: dataset_split\val
+test: dataset_split\test
+nc: 2
+classes: {
+  0: "Drowsy",
+  1: "Non_Drowsy"
+}
