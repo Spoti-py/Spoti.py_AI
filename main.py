@@ -1,7 +1,7 @@
 import cv2, time, numpy as np
 from ultralytics import YOLO
 
-model = YOLO("./models/drowsiness.pt")
+model = YOLO("./best.pt")
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     raise RuntimeError("딴카메라")
@@ -22,7 +22,7 @@ while True:
     if not ok:
         break
     H, W = frame.shape[:2]
-    results = model(frame, imgsz=256, conf=0.7)[0]
+    results = model(frame, imgsz=640, conf=0.48)[0]
     annotated = results.plot()
     if results.boxes is not None and len(results.boxes) > 0:
         boxes = results.boxes.xyxy.cpu().numpy()
@@ -36,8 +36,7 @@ while True:
             if face.size == 0:
                 continue
 
-            face_small = cv2.resize(face, (160, 160), interpolation=cv2.INTER_LINEAR)
-            cv2.imshow(f"face{i}", face_small)
+            face_small = cv2.resize(face, (160, 160), interpolation=cv2.INTER_LINEAR) # 나중에 랜드마크 정할 때 쓸듯
 
             # cv2.imwrite(f"face_{crop_id:06d}.jpg", face)
             # crop_id += 1 파일로저장
@@ -55,7 +54,7 @@ while True:
     cv2.putText(annotated, f"FPS: {fps:.1f}", (10,30),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
 
-    cv2.imshow("YOLO Realtime", annotated)
+    cv2.imshow("test", annotated)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
