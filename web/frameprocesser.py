@@ -1,18 +1,17 @@
-import os
-import cv2
-import time
-import threading
-import numpy as np
-from collections import deque
-from fastapi import FastAPI, Response
-from fastapi.responses import HTMLResponse, StreamingResponse, PlainTextResponse
-from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
+import cv2
+import threading
+from collections import deque
+import time
+import os
 import mediapipe as mp
+import numpy as np
+def euclidean(p1, p2) -> float:
+    return np.linalg.norm(np.array(p1) - np.array(p2))
 
-# -------------------------
-# Config
-# -------------------------
+def eye_ear(pts) -> float:
+    p1, p2, p3, p4, p5, p6 = pts
+    return (euclidean(p2, p6) + euclidean(p3, p5)) / (2.0 * euclidean(p1, p4) + 1e-6)
 MODEL_PATH = os.getenv("MODEL_PATH", "./models/bestM.pt")
 DEVICE_INDEX = int(os.getenv("DEVICE_INDEX", "0"))   # 0번 웹캠
 FRAME_W = int(os.getenv("FRAME_W", "640"))
@@ -23,19 +22,6 @@ EAR_THRESH = float(os.getenv("EAR_THRESH", "0.21"))
 SMOOTH_N = int(os.getenv("SMOOTH_N", "5"))
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
-# -------------------------
-# EAR utils
-# -------------------------
-def euclidean(p1, p2) -> float:
-    return np.linalg.norm(np.array(p1) - np.array(p2))
-
-def eye_ear(pts) -> float:
-    p1, p2, p3, p4, p5, p6 = pts
-    return (euclidean(p2, p6) + euclidean(p3, p5)) / (2.0 * euclidean(p1, p4) + 1e-6)
-
-RIGHT_EYE_IDXS = [33, 160, 158, 133, 153, 144]
-LEFT_EYE_IDXS  = [263, 387, 385, 362, 380, 373]
-
 mp_face = mp.solutions.face_mesh
 face_mesh = mp_face.FaceMesh(
     static_image_mode=False,
@@ -45,9 +31,9 @@ face_mesh = mp_face.FaceMesh(
     min_tracking_confidence=0.5
 )
 
-# -------------------------
-# Processor Thread
-# -------------------------
+RIGHT_EYE_IDXS = [33, 160, 158, 133, 153, 144]
+LEFT_EYE_IDXS  = [263, 387, 385, 362, 380, 373]
+
 class FrameProcessor:
     def __init__(self):
         self.model = YOLO(MODEL_PATH)
@@ -140,69 +126,3 @@ class FrameProcessor:
             else:
                 # 인코딩 실패시 잠깐 쉼
                 time.sleep(0.005)
-
-# -------------------------
-# FastAPI app
-# -------------------------
-app = FastAPI(title="YOLO+EAR Streaming")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], allow_credentials=True,
-    allow_methods=["*"], allow_headers=["*"],
-)
-
-processor = FrameProcessor()
-processor.start()
-
-@app.get("/", response_class=HTMLResponse)
-def index():
-    return """
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8" />
-<title>YOLO + EAR Live</title>
-<style>
-body { margin:0; background:#0b0b0b; color:#fafafa; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
-.wrap { display:flex; min-height:100vh; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
-.card { background:#111; border:1px solid #222; border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.35);}
-img { max-width:min(96vw, 960px); border-radius:12px; display:block; }
-.badge { font-size:12px; opacity:.8; }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="card">
-    <div class="badge">ultralytics + mediapipe + fastapi • mjpeg</div>
-    <img src="/video_feed" alt="live stream">
-  </div>
-</div>
-</body>
-</html>
-    """
-
-@app.get("/healthz", response_class=PlainTextResponse)
-def healthz():
-    return "ok"
-
-def mjpeg_generator():
-    boundary = b"--frame"
-    while True:
-        with processor.lock:
-            frame = processor.latest_jpeg
-        if frame is None:
-            # 아직 프레임 없으면 살짝 대기
-            time.sleep(0.01)
-            continue
-        yield boundary + b"\r\nContent-Type: image/jpeg\r\n\r\n" + frame + b"\r\n"
-
-@app.get("/video_feed")
-def video_feed():
-    return StreamingResponse(
-        mjpeg_generator(),
-        media_type="multipart/x-mixed-replace; boundary=frame"
-    )
-
-@app.on_event("shutdown")
-def on_shutdown():
-    processor.stop()
