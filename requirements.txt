@@ -1,4 +1,0 @@
-time
-cv2
-ultralytics
-requests
