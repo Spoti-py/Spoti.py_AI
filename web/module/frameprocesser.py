@@ -1,3 +1,6 @@
+# 이거 안씀
+# streaming.py로 옮김
+
 from ultralytics import YOLO
 import cv2
 import threading

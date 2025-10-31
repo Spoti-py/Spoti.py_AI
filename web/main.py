@@ -1,17 +1,16 @@
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import StreamingResponse, JSONResponse
-from streaming import generate, push_frame
+from module.streaming import generate, push_frame
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
 
+app = FastAPI()
 load_dotenv()
 MONGODB_URL = os.getenv("MONGODB_URL")
 client = MongoClient(MONGODB_URL)
 db = client['spotipy']
 col = db['sleepy']
-
-app = FastAPI()
 
 @app.get("/")
 async def root():

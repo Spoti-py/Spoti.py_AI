@@ -8,7 +8,6 @@ import time
 import datetime
 import os
 from dotenv import load_dotenv
-
 load_dotenv()
 MONGODB_URL = os.getenv("MONGODB_URL")
 mongodb = MongoClient(MONGODB_URL)
@@ -16,7 +15,6 @@ db = mongodb['spotipy']
 col = db['sleepy']
 
 model = YOLO("./models/bestM.pt")
-
 CONF_THRES = 0.30
 IMGSZ = 640
 EAR_THRESH = 0.19
@@ -24,12 +22,11 @@ SMOOTH_N = 5
 SAVE_INTER_SEC = 0.7
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 lastsave_ts = 0.0
-
 latest_frame = None
 
+# comment: 유클리디안 계산법 적용 후 랜드마크 간 거리 계산
 def euclidean(p1, p2) -> float:
     return np.linalg.norm(np.array(p1) - np.array(p2))
-
 def eye_ear(pts) -> float:
     p1, p2, p3, p4, p5, p6 = pts
     return (euclidean(p2, p6) + euclidean(p3, p5)) / (2.0 * euclidean(p1, p4) + 1e-6)
@@ -98,7 +95,7 @@ def generate():
                     col.insert_one(doc)
                     lastsave_ts = now
                 except Exception as e:
-                    print(f"[Mongo] insert failed: {e}")
+                    print(f"몽고디비 삽입 오류남\n{e}")
 
             cv2.putText(frame, f"EAR: {ear_smooth:.3f}  [{status}]",
                         (10, 30), FONT, 0.8, (0, 255, 0) if status=="OPEN" else (0, 0, 255), 2)
