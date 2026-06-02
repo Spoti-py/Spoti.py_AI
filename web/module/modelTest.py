@@ -16,9 +16,10 @@ CONF_THRES = float(os.getenv("CONF_THRES", "0.30"))
 IMGSZ = int(os.getenv("IMGSZ", "480"))
 EAR_THRESH = float(os.getenv("EAR_THRESH", "0.19"))
 SMOOTH_N = int(os.getenv("SMOOTH_N", "5"))
-FRAME_W = int(os.getenv("FRAME_W", "640"))
-FRAME_H = int(os.getenv("FRAME_H", "480"))
+FRAME_W = int(os.getenv("FRAME_W", "1900"))
+FRAME_H = int(os.getenv("FRAME_H", "1000"))
 FONT = cv2.FONT_HERSHEY_SIMPLEX
+WINDOW_NAME = "bestM.pt test"
 
 RIGHT_EYE_IDXS = [33, 160, 158, 133, 153, 144]
 LEFT_EYE_IDXS = [263, 387, 385, 362, 380, 373]
@@ -87,6 +88,10 @@ def draw_fps(frame, fps: float) -> None:
     cv2.putText(frame, f"FPS: {fps:.1f}", (10, 90), FONT, 0.7, (255, 255, 255), 2)
 
 
+def resize_for_display(frame):
+    return cv2.resize(frame, (FRAME_W, FRAME_H), interpolation=cv2.INTER_AREA)
+
+
 def predict_image(model: YOLO, image_path: str) -> None:
     frame = cv2.imread(image_path)
     if frame is None:
@@ -95,8 +100,11 @@ def predict_image(model: YOLO, image_path: str) -> None:
     result = predict(model, frame)
     output = result.plot()
     draw_ear(frame, output, deque(maxlen=SMOOTH_N))
+    output = resize_for_display(output)
 
-    cv2.imshow("bestM.pt test", output)
+    cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(WINDOW_NAME, FRAME_W, FRAME_H)
+    cv2.imshow(WINDOW_NAME, output)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -115,6 +123,9 @@ def predict_webcam(model: YOLO, device_index: int = 0) -> None:
     fps = 0.0
 
     try:
+        cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(WINDOW_NAME, FRAME_W, FRAME_H)
+
         while True:
             ok, frame = cap.read()
             if not ok:
@@ -129,8 +140,9 @@ def predict_webcam(model: YOLO, device_index: int = 0) -> None:
             fps = instant_fps if fps == 0.0 else (fps * 0.9) + (instant_fps * 0.1)
             last_ts = now
             draw_fps(output, fps)
+            output = resize_for_display(output)
 
-            cv2.imshow("bestM.pt test", output)
+            cv2.imshow(WINDOW_NAME, output)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
     finally:
