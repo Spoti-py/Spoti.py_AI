@@ -1,6 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse
-from module.streaming import generate, push_frame
+from module.streaming import generate, process_keypoints
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
@@ -21,15 +21,28 @@ async def stream():
     return StreamingResponse(generate(), media_type="multipart/x-mixed-replace; boundary=frame")
 
 @app.post("/upload")
-async def upload(request: Request, file: UploadFile | None = File(None)):
-    if file is not None:
-        image_bytes = await file.read()
-    else:
-        image_bytes = await request.body()
-    if not image_bytes:
-        return JSONResponse({"ok": False, "error": "empty body"}, status_code=400)
-    push_frame(image_bytes)
-    return {"ok": True}
+async def upload(request: Request):
+    try:
+        payload = await request.json()
+        result = process_keypoints(payload)
+    except ValueError as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+
+    return {"ok": True, **result}
+
+@app.websocket("/ws/keypoints")
+async def keypoints_ws(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            try:
+                payload = await websocket.receive_json()
+                result = process_keypoints(payload)
+                await websocket.send_json({"ok": True, **result})
+            except ValueError as e:
+                await websocket.send_json({"ok": False, "error": str(e)})
+    except WebSocketDisconnect:
+        pass
 
 @app.post("/statistic")
 async def statistic():
