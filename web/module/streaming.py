@@ -1,21 +1,21 @@
 from collections import deque
 import math
-from pymongo import MongoClient
+# from pymongo import MongoClient
 import time
-import datetime
-import os
-from dotenv import load_dotenv
+# import datetime
+# import os
+# from dotenv import load_dotenv
 
-load_dotenv()
-MONGODB_URL = os.getenv("MONGODB_URL")
-mongodb = MongoClient(MONGODB_URL, serverSelectionTimeoutMS=1000)
-db = mongodb['spotipy']
-col = db['sleepy']
+# load_dotenv()
+# MONGODB_URL = os.getenv("MONGODB_URL")
+# mongodb = MongoClient(MONGODB_URL, serverSelectionTimeoutMS=1000)
+# db = mongodb['spotipy']
+# col = db['sleepy']
 
 EAR_THRESH = 0.19
 SMOOTH_N = 5
-SAVE_EVERY_N = 20
-processed_count = 0
+# SAVE_EVERY_N = 20
+# processed_count = 0
 latest_result = None
 
 def euclidean(p1, p2) -> float:
@@ -82,7 +82,7 @@ def _eye_points(keypoints, indexes):
 
 
 def process_keypoints(payload):
-    global processed_count, latest_result
+    global latest_result
 
     keypoints = _pick_keypoints(payload)
     direct_eye_points = _pick_direct_eye_points(payload)
@@ -112,17 +112,17 @@ def process_keypoints(payload):
     }
     latest_result = {**result, "right_eye": right_eye_pts, "left_eye": left_eye_pts}
 
-    processed_count += 1
-    if processed_count % SAVE_EVERY_N == 0:
-        doc = {
-            "timestamp": datetime.datetime.utcnow(),
-            "ear_smooth": float(ear_smooth),
-            "status": status,
-        }
-        try:
-            col.insert_one(doc)
-        except Exception as e:
-            print(f"몽고디비 삽입 오류남\n{e}")
+    # processed_count += 1
+    # if processed_count % SAVE_EVERY_N == 0:
+    #     doc = {
+    #         "timestamp": datetime.datetime.utcnow(),
+    #         "ear_smooth": float(ear_smooth),
+    #         "status": status,
+    #     }
+    #     try:
+    #         col.insert_one(doc)
+    #     except Exception as e:
+    #         print(f"몽고디비 삽입 오류남\n{e}")
 
     return result
 

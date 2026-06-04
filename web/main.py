@@ -1,16 +1,16 @@
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse
 from module.streaming import generate, process_keypoints
-from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
+# from pymongo import MongoClient
+# from dotenv import load_dotenv
+# import os
 
 app = FastAPI()
-load_dotenv()
-MONGODB_URL = os.getenv("MONGODB_URL")
-client = MongoClient(MONGODB_URL, serverSelectionTimeoutMS=1000)
-db = client['spotipy']
-col = db['sleepy']
+# load_dotenv()
+# MONGODB_URL = os.getenv("MONGODB_URL")
+# client = MongoClient(MONGODB_URL, serverSelectionTimeoutMS=1000)
+# db = client['spotipy']
+# col = db['sleepy']
 
 @app.get("/")
 async def root():
@@ -47,9 +47,9 @@ async def keypoints_ws(websocket: WebSocket):
     except WebSocketDisconnect:
         pass
 
-@app.post("/statistic")
-async def statistic():
-    doc = list(col.find().sort("timestamp", -1).limit(50))
-    for d in doc:
-        d["_id"] = str(d["_id"])
-    return {"data": doc}
+# @app.post("/statistic")
+# async def statistic():
+#     doc = list(col.find().sort("timestamp", -1).limit(50))
+#     for d in doc:
+#         d["_id"] = str(d["_id"])
+#     return {"data": doc}
