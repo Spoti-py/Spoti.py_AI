@@ -8,7 +8,7 @@ import os
 app = FastAPI()
 load_dotenv()
 MONGODB_URL = os.getenv("MONGODB_URL")
-client = MongoClient(MONGODB_URL)
+client = MongoClient(MONGODB_URL, serverSelectionTimeoutMS=1000)
 db = client['spotipy']
 col = db['sleepy']
 
@@ -41,6 +41,9 @@ async def keypoints_ws(websocket: WebSocket):
                 await websocket.send_json({"ok": True, **result})
             except ValueError as e:
                 await websocket.send_json({"ok": False, "error": str(e)})
+            except Exception as e:
+                print(f"웹소켓 처리 오류남\n{e}")
+                await websocket.send_json({"ok": False, "error": "internal server error"})
     except WebSocketDisconnect:
         pass
 

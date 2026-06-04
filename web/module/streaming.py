@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 MONGODB_URL = os.getenv("MONGODB_URL")
-mongodb = MongoClient(MONGODB_URL)
+mongodb = MongoClient(MONGODB_URL, serverSelectionTimeoutMS=1000)
 db = mongodb['spotipy']
 col = db['sleepy']
 
@@ -114,6 +114,7 @@ def process_keypoints(payload):
 
     now = time.time()
     if now - lastsave_ts >= SAVE_INTER_SEC:
+        lastsave_ts = now
         doc = {
             "timestamp": datetime.datetime.utcnow(),
             "ear_smooth": float(ear_smooth),
@@ -121,7 +122,6 @@ def process_keypoints(payload):
         }
         try:
             col.insert_one(doc)
-            lastsave_ts = now
         except Exception as e:
             print(f"몽고디비 삽입 오류남\n{e}")
 

@@ -5,5 +5,5 @@ pymongo
 python-dotenv
 python-multipart==0.0.20
 fastapi
-uvicorn
+uvicorn[standard]
 mediapipe
