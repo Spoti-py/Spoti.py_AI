@@ -14,8 +14,8 @@ col = db['sleepy']
 
 EAR_THRESH = 0.19
 SMOOTH_N = 5
-SAVE_INTER_SEC = 0.7
-lastsave_ts = 0.0
+SAVE_EVERY_N = 20
+processed_count = 0
 latest_result = None
 
 def euclidean(p1, p2) -> float:
@@ -82,7 +82,7 @@ def _eye_points(keypoints, indexes):
 
 
 def process_keypoints(payload):
-    global lastsave_ts, latest_result
+    global processed_count, latest_result
 
     keypoints = _pick_keypoints(payload)
     direct_eye_points = _pick_direct_eye_points(payload)
@@ -112,9 +112,8 @@ def process_keypoints(payload):
     }
     latest_result = {**result, "right_eye": right_eye_pts, "left_eye": left_eye_pts}
 
-    now = time.time()
-    if now - lastsave_ts >= SAVE_INTER_SEC:
-        lastsave_ts = now
+    processed_count += 1
+    if processed_count % SAVE_EVERY_N == 0:
         doc = {
             "timestamp": datetime.datetime.utcnow(),
             "ear_smooth": float(ear_smooth),
