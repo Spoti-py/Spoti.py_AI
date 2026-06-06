@@ -3,7 +3,12 @@ ultralytics
 requests
 pymongo
 python-dotenv
-python-multipart==0.0.20
+
+# multipart 취약점 패치
+python-multipart>=0.0.27 
+
 fastapi
 uvicorn[standard]
-mediapipe
+
+# solutions함수 지원을 위해 버전 고정
+mediapipe==0.10.21
