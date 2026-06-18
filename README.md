@@ -24,6 +24,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 간단한 사용 시나리오
 - 웹캠이나 비디오 소스에서 프레임을 스트리밍하고, 추출한 키포인트를 `/upload`로 제출하면 처리 결과(JSON)를 받습니다. 실시간 인터랙션이 필요하면 `/ws/keypoints`로 WebSocket 연결 후 JSON을 주고받으세요.
+- 눈 감김 상태가 감지되면 응답에 `"alarm": true`가 포함됩니다. 프론트에서는 이 값을 보고 경고음을 켜고, `"alarm": false`가 오면 끄면 됩니다.
 
 주의 및 참고사항
 - 의존성(OpenCV, MediaPipe 등)은 `requirements.txt`를 확인하세요.

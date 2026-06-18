@@ -12,7 +12,7 @@ import time
 # db = mongodb['spotipy']
 # col = db['sleepy']
 
-EAR_THRESH = 0.19
+EAR_THRESH = 0.16
 SMOOTH_N = 5
 # SAVE_EVERY_N = 20
 # processed_count = 0
@@ -105,10 +105,12 @@ def process_keypoints(payload):
 
     ear_smooth = sum(ear_hist) / len(ear_hist)
     status = "OPEN" if ear_smooth >= EAR_THRESH else "CLOSED"
+    alarm = status == "CLOSED"
     result = {
         "ear": float(ear_value),
         "ear_smooth": float(ear_smooth),
         "status": status,
+        "alarm": alarm,
     }
     latest_result = {**result, "right_eye": right_eye_pts, "left_eye": left_eye_pts}
 
