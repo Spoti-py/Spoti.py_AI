@@ -13,13 +13,15 @@ import time
 # db = mongodb['spotipy']
 # col = db['sleepy']
 
-EAR_THRESH = float(os.getenv("EAR_THRESH", "0.16"))
+EAR_THRESH = float(os.getenv("EAR_THRESH", "0.19"))
 DEVICE_EAR_THRESHOLDS = {
     "phone": float(os.getenv("EAR_THRESH_PHONE", "0.095")),
     "mobile": float(os.getenv("EAR_THRESH_MOBILE", "0.095")),
     "laptop": float(os.getenv("EAR_THRESH_LAPTOP", str(EAR_THRESH))),
     "desktop": float(os.getenv("EAR_THRESH_DESKTOP", str(EAR_THRESH))),
 }
+MOBILE_DEVICE_HINTS = ("phone", "mobile", "iphone", "ipad", "ios", "android")
+DESKTOP_DEVICE_HINTS = ("laptop", "desktop", "macintosh", "mac os", "windows", "linux")
 SMOOTH_N = 5
 # SAVE_EVERY_N = 20
 # processed_count = 0
@@ -79,7 +81,33 @@ def _device_key(payload):
     return str(device).strip().lower() or "default"
 
 
-def _ear_threshold(payload, device):
+def _device_category(payload, device):
+    if not isinstance(payload, dict):
+        return device if device in DEVICE_EAR_THRESHOLDS else "default"
+
+    hints = [
+        device,
+        payload.get("device"),
+        payload.get("deviceType"),
+        payload.get("device_type"),
+        payload.get("platform"),
+        payload.get("os"),
+        payload.get("userAgent"),
+        payload.get("user_agent"),
+        payload.get("browser"),
+    ]
+    hint_text = " ".join(str(hint).lower() for hint in hints if hint)
+
+    if any(hint in hint_text for hint in MOBILE_DEVICE_HINTS):
+        return "phone"
+    if any(hint in hint_text for hint in DESKTOP_DEVICE_HINTS):
+        return "laptop"
+    if device in DEVICE_EAR_THRESHOLDS:
+        return device
+    return "default"
+
+
+def _ear_threshold(payload, device_category):
     if isinstance(payload, dict):
         threshold = payload.get("earThreshold", payload.get("ear_threshold"))
         if threshold is not None:
@@ -88,7 +116,7 @@ def _ear_threshold(payload, device):
             except (TypeError, ValueError):
                 raise ValueError("invalid ear threshold")
 
-    return DEVICE_EAR_THRESHOLDS.get(device, EAR_THRESH)
+    return DEVICE_EAR_THRESHOLDS.get(device_category, EAR_THRESH)
 
 
 def _xy(point):
@@ -120,7 +148,8 @@ def process_keypoints(payload):
     global latest_result
 
     device = _device_key(payload)
-    ear_threshold = _ear_threshold(payload, device)
+    device_category = _device_category(payload, device)
+    ear_threshold = _ear_threshold(payload, device_category)
     keypoints = _pick_keypoints(payload)
     direct_eye_points = _pick_direct_eye_points(payload)
 
@@ -149,6 +178,7 @@ def process_keypoints(payload):
         "ear_smooth": float(ear_smooth),
         "ear_threshold": float(ear_threshold),
         "device": device,
+        "device_category": device_category,
         "status": status,
         "alarm": alarm,
     }
