@@ -1,5 +1,6 @@
-from collections import deque
+from collections import defaultdict, deque
 import math
+import os
 # from pymongo import MongoClient
 import time
 # import datetime
@@ -12,7 +13,13 @@ import time
 # db = mongodb['spotipy']
 # col = db['sleepy']
 
-EAR_THRESH = 0.16
+EAR_THRESH = float(os.getenv("EAR_THRESH", "0.16"))
+DEVICE_EAR_THRESHOLDS = {
+    "phone": float(os.getenv("EAR_THRESH_PHONE", "0.095")),
+    "mobile": float(os.getenv("EAR_THRESH_MOBILE", "0.095")),
+    "laptop": float(os.getenv("EAR_THRESH_LAPTOP", str(EAR_THRESH))),
+    "desktop": float(os.getenv("EAR_THRESH_DESKTOP", str(EAR_THRESH))),
+}
 SMOOTH_N = 5
 # SAVE_EVERY_N = 20
 # processed_count = 0
@@ -29,7 +36,7 @@ def eye_ear(pts) -> float:
 RIGHT_EYE_IDXS = [33, 160, 158, 133, 153, 144]
 LEFT_EYE_IDXS  = [263, 387, 385, 362, 380, 373]
 
-ear_hist = deque(maxlen=SMOOTH_N)
+ear_hists = defaultdict(lambda: deque(maxlen=SMOOTH_N))
 
 
 def _pick_keypoints(payload):
@@ -54,6 +61,34 @@ def _pick_direct_eye_points(payload):
     if right_eye and left_eye:
         return (right_eye, left_eye)
     return None
+
+
+def _device_key(payload):
+    if not isinstance(payload, dict):
+        return "default"
+
+    device = (
+        payload.get("device")
+        or payload.get("deviceType")
+        or payload.get("device_type")
+        or payload.get("client")
+        or payload.get("clientId")
+        or payload.get("client_id")
+        or "default"
+    )
+    return str(device).strip().lower() or "default"
+
+
+def _ear_threshold(payload, device):
+    if isinstance(payload, dict):
+        threshold = payload.get("earThreshold", payload.get("ear_threshold"))
+        if threshold is not None:
+            try:
+                return float(threshold)
+            except (TypeError, ValueError):
+                raise ValueError("invalid ear threshold")
+
+    return DEVICE_EAR_THRESHOLDS.get(device, EAR_THRESH)
 
 
 def _xy(point):
@@ -84,6 +119,8 @@ def _eye_points(keypoints, indexes):
 def process_keypoints(payload):
     global latest_result
 
+    device = _device_key(payload)
+    ear_threshold = _ear_threshold(payload, device)
     keypoints = _pick_keypoints(payload)
     direct_eye_points = _pick_direct_eye_points(payload)
 
@@ -101,14 +138,17 @@ def process_keypoints(payload):
     ear_r = eye_ear(right_eye_pts)
     ear_l = eye_ear(left_eye_pts)
     ear_value = (ear_r + ear_l) / 2.0
+    ear_hist = ear_hists[device]
     ear_hist.append(ear_value)
 
     ear_smooth = sum(ear_hist) / len(ear_hist)
-    status = "OPEN" if ear_smooth >= EAR_THRESH else "CLOSED"
+    status = "OPEN" if ear_smooth >= ear_threshold else "CLOSED"
     alarm = status == "CLOSED"
     result = {
         "ear": float(ear_value),
         "ear_smooth": float(ear_smooth),
+        "ear_threshold": float(ear_threshold),
+        "device": device,
         "status": status,
         "alarm": alarm,
     }
