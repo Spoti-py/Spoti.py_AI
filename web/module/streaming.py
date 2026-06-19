@@ -20,7 +20,17 @@ DEVICE_EAR_THRESHOLDS = {
     "laptop": float(os.getenv("EAR_THRESH_LAPTOP", str(EAR_THRESH))),
     "desktop": float(os.getenv("EAR_THRESH_DESKTOP", str(EAR_THRESH))),
 }
-MOBILE_DEVICE_HINTS = ("phone", "mobile", "iphone", "ipad", "ios", "android")
+MOBILE_DEVICE_HINTS = (
+    "phone",
+    "mobile",
+    "iphone",
+    "ipad",
+    "ios",
+    "android",
+    "safari",
+    "galaxy",
+    "pixel",
+)
 DESKTOP_DEVICE_HINTS = ("laptop", "desktop", "macintosh", "mac os", "windows", "linux")
 SMOOTH_N = 5
 # SAVE_EVERY_N = 20
