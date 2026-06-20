@@ -23,6 +23,51 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 - `requirements.txt`: 필요한 Python 패키지 목록
 - `Dockerfile`: 컨테이너 실행 구성
 
+
+
+Swagger 문서
+- 서버 실행 후 Swagger UI는 `http://localhost:8000/docs`에서 확인합니다.
+- 로그인 후 Swagger UI 우측 상단 `Authorize` 버튼에 `access_token`을 넣으면 Bearer 인증 API를 바로 테스트할 수 있습니다.
+- OpenAPI JSON은 `http://localhost:8000/openapi.json`에서 확인합니다.
+- WebSocket 엔드포인트(`/ws/keypoints`, `/ws/yawn`)는 OpenAPI 표준상 Swagger UI에 자동 표시되지 않으므로 아래 사용 시나리오를 참고하세요.
+
+로그인 API
+- 회원가입: `POST /auth/signup`
+
+```json
+{
+  "username": "user01",
+  "nickname": "사용자",
+  "password": "password123",
+  "passwordConfirm": "password123"
+}
+```
+
+- 로그인: `POST /auth/login`
+
+```json
+{
+  "username": "user01",
+  "password": "password123"
+}
+```
+
+- 로그인 응답의 `access_token`은 이후 요청에서 `Authorization: Bearer <token>` 형식으로 보냅니다.
+- 현재 사용자 확인: `GET /auth/me`
+- 로그아웃: `POST /auth/logout`
+
+MySQL 환경변수
+- `.env` 또는 실행 환경에 아래 값을 설정하면 서버 시작 시 `users`, `auth_sessions` 테이블을 자동 생성합니다.
+
+```bash
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=spotipy
+MYSQL_PASSWORD=your_password
+MYSQL_DATABASE=spotipy
+AUTH_TOKEN_EXPIRE_DAYS=7
+```
+
 간단한 사용 시나리오
 - 웹캠이나 비디오 소스에서 프레임을 스트리밍하고, 추출한 키포인트를 `/upload`로 제출하면 처리 결과(JSON)를 받습니다. 실시간 인터랙션이 필요하면 `/ws/keypoints`로 WebSocket 연결 후 JSON을 주고받으세요.
 - 디바이스별 EAR 기준치를 다르게 쓰려면 키포인트 JSON에 `"device": "phone"` 또는 `"device": "laptop"`을 함께 보내세요. 직접 튜닝할 때는 `"earThreshold": 0.095`처럼 보내면 해당 요청에서 우선 적용됩니다.

@@ -12,3 +12,4 @@ uvicorn[standard]
 
 # solutions함수 지원을 위해 버전 고정
 mediapipe==0.10.21
+PyMySQL
