@@ -36,6 +36,7 @@ SMOOTH_N = 5
 # SAVE_EVERY_N = 20
 # processed_count = 0
 latest_result = None
+latest_results = {}
 
 def euclidean(p1, p2) -> float:
     return math.dist(p1, p2)
@@ -75,6 +76,13 @@ def _pick_direct_eye_points(payload):
     return None
 
 
+def make_state_key(user_id=None, device="default"):
+    device_key = str(device or "default").strip().lower() or "default"
+    if user_id is None:
+        return device_key
+    return f"user:{user_id}:device:{device_key}"
+
+
 def _device_key(payload):
     if not isinstance(payload, dict):
         return "default"
@@ -89,6 +97,20 @@ def _device_key(payload):
         or "default"
     )
     return str(device).strip().lower() or "default"
+
+
+def _state_key(payload, device):
+    if not isinstance(payload, dict):
+        return make_state_key(device=device)
+
+    user_id = (
+        payload.get("_auth_user_id")
+        or payload.get("userId")
+        or payload.get("user_id")
+        or payload.get("memberId")
+        or payload.get("member_id")
+    )
+    return make_state_key(user_id=user_id, device=device)
 
 
 def _device_category(payload, device):
@@ -160,6 +182,7 @@ def process_keypoints(payload):
     device = _device_key(payload)
     device_category = _device_category(payload, device)
     ear_threshold = _ear_threshold(payload, device_category)
+    state_key = _state_key(payload, device)
     keypoints = _pick_keypoints(payload)
     direct_eye_points = _pick_direct_eye_points(payload)
 
@@ -177,7 +200,7 @@ def process_keypoints(payload):
     ear_r = eye_ear(right_eye_pts)
     ear_l = eye_ear(left_eye_pts)
     ear_value = (ear_r + ear_l) / 2.0
-    ear_hist = ear_hists[device]
+    ear_hist = ear_hists[state_key]
     ear_hist.append(ear_value)
 
     ear_smooth = sum(ear_hist) / len(ear_hist)
@@ -189,10 +212,12 @@ def process_keypoints(payload):
         "ear_threshold": float(ear_threshold),
         "device": device,
         "device_category": device_category,
+        "state_key": state_key,
         "status": status,
         "alarm": alarm,
     }
     latest_result = {**result, "right_eye": right_eye_pts, "left_eye": left_eye_pts}
+    latest_results[state_key] = latest_result
 
     # processed_count += 1
     # if processed_count % SAVE_EVERY_N == 0:
@@ -232,8 +257,9 @@ def _frame(text: str = "Waiting for keypoints...", result=None) -> bytes:
     return buf.tobytes() if ok else b""
 
 
-def generate():
+def generate(state_key=None):
     while True:
-        frame_bytes = _frame(result=latest_result) if latest_result else _frame()
+        result = latest_results.get(state_key) if state_key else latest_result
+        frame_bytes = _frame(result=result) if result else _frame()
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
         time.sleep(0.05)
