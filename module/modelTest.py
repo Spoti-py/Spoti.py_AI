@@ -10,8 +10,8 @@ import numpy as np
 from ultralytics import YOLO
 
 
-WEB_DIR = Path(__file__).resolve().parents[1]
-MODEL_PATH = WEB_DIR / "models" / "bestM.pt"
+APP_DIR = Path(__file__).resolve().parents[1]
+MODEL_PATH = APP_DIR / "models" / "bestM.pt"
 CONF_THRES = float(os.getenv("CONF_THRES", "0.30"))
 IMGSZ = int(os.getenv("IMGSZ", "480"))
 EAR_THRESH = float(os.getenv("EAR_THRESH", "0.19"))

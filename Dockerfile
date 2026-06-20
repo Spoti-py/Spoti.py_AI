@@ -4,10 +4,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-COPY requirements.txt .
-
-RUN pip install --no-cache-dir -r requirements.txt
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
@@ -16,16 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+COPY requirements.txt .
 RUN python -m pip install --upgrade pip && \
-    pip install \
-      "python-multipart==0.0.20" \
-      "pydantic>=1.7.4,<3" \
-      "fastapi>=0.115,<1" \
-      "uvicorn[standard]>=0.30,<1" \
-      "numpy>=1.26" \
-      "opencv-python-headless>=4.10" \
-      "mediapipe>=0.10.14" \
-      "ultralytics>=8.3,<9"
+    pip install --no-cache-dir -r requirements.txt
 
 COPY . /app
 RUN mkdir -p /app/models

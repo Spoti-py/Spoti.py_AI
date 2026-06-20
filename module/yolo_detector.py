@@ -8,8 +8,8 @@ import cv2
 import numpy as np
 
 
-WEB_DIR = Path(__file__).resolve().parents[1]
-MODEL_PATH = Path(os.getenv("MODEL_PATH", WEB_DIR / "models" / "bestM.pt"))
+APP_DIR = Path(__file__).resolve().parents[1]
+MODEL_PATH = Path(os.getenv("MODEL_PATH", APP_DIR / "models" / "bestM.pt"))
 CONF_THRES = float(os.getenv("CONF_THRES", "0.30"))
 IMGSZ = int(os.getenv("IMGSZ", "480"))
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
