@@ -1,8 +1,10 @@
+import os
 from typing import Any
 
 from fastapi import Body, FastAPI, File, Query, Security, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from fastapi.security import HTTPAuthorizationCredentials
 from auth.routes import bearer_scheme, current_user_from_token, optional_user_from_credentials, router as auth_router
@@ -13,6 +15,21 @@ from module.yolo_detector import decode_base64_image, detect_yawn_bytes, detect_
 # import os
 
 load_dotenv()
+
+
+def _cors_origins() -> list[str]:
+    origins = os.getenv("CORS_ALLOWED_ORIGINS")
+
+    if origins:
+        return [origin.strip() for origin in origins.split(",") if origin.strip()]
+
+    return [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "https://spoti.ingyuc.click",
+    ]
 
 OPENAPI_TAGS = [
     {"name": "health", "description": "서버 상태 확인 API"},
@@ -30,6 +47,14 @@ app = FastAPI(
     ),
     version="0.1.0",
     openapi_tags=OPENAPI_TAGS,
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins(),
+    allow_origin_regex=os.getenv("CORS_ALLOW_ORIGIN_REGEX"),
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 app.include_router(auth_router)
 

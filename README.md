@@ -66,6 +66,7 @@ MYSQL_USER=spotipy
 MYSQL_PASSWORD=your_password
 MYSQL_DATABASE=spotipy
 AUTH_TOKEN_EXPIRE_DAYS=7
+CORS_ALLOWED_ORIGINS=https://your-frontend-domain.example,https://spoti.ingyuc.click
 ```
 
 간단한 사용 시나리오
